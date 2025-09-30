@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Modern Battleship</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Auth Screen -->
+        <div id="auth" class="screen active">
+            <div class="container">
+                <h1>⚓ Modern Battleship</h1>
+
+                <div class="auth-tabs">
+                    <button id="loginTab" class="tab-btn active">Login</button>
+                    <button id="registerTab" class="tab-btn">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="loginForm" class="form-section">
+                    <input type="text" id="loginUsername" placeholder="Username" maxlength="20">
+                    <input type="password" id="loginPassword" placeholder="Password">
+                    <button id="loginBtn" class="btn btn-primary">Login</button>
+                    <div id="loginError" class="error-message hidden"></div>
+                </div>
+
+                <!-- Register Form -->
+                <div id="registerForm" class="form-section hidden">
+                    <input type="text" id="registerUsername" placeholder="Username (3-20 chars)" maxlength="20">
+                    <input type="password" id="registerPassword" placeholder="Password (min 6 chars)">
+                    <input type="password" id="registerPasswordConfirm" placeholder="Confirm Password">
+                    <button id="registerBtn" class="btn btn-primary">Register</button>
+                    <div id="registerError" class="error-message hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matchmaking Screen -->
+        <div id="matchmaking" class="screen">
+            <div class="container">
+                <h1>⚓ Modern Battleship</h1>
+
+                <div id="userStats" class="user-stats">
+                    <h3>Welcome, <span id="usernameDisplay"></span>!</h3>
+                    <div class="stats-row">
+                        <span>Wins: <strong id="winsDisplay">0</strong></span>
+                        <span>Losses: <strong id="lossesDisplay">0</strong></span>
+                        <span>Games: <strong id="gamesDisplay">0</strong></span>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <select id="countrySelect">
+                        <option value="US">🇺🇸 United States</option>
+                        <option value="UK">🇬🇧 United Kingdom</option>
+                        <option value="JP">🇯🇵 Japan</option>
+                        <option value="CN">🇨🇳 China</option>
+                        <option value="RU">🇷🇺 Russia</option>
+                        <option value="FR">🇫🇷 France</option>
+                        <option value="DE">🇩🇪 Germany</option>
+                        <option value="IN">🇮🇳 India</option>
+                        <option value="KR">🇰🇷 South Korea</option>
+                        <option value="IT">🇮🇹 Italy</option>
+                        <option value="AU">🇦🇺 Australia</option>
+                        <option value="BR">🇧🇷 Brazil</option>
+                    </select>
+
+                    <button id="findMatchBtn" class="btn btn-primary">Find Match</button>
+                    <button id="cancelQueueBtn" class="btn btn-danger hidden">Cancel Queue</button>
+                    <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+                </div>
+
+                <div id="queueStatus" class="info-message hidden">
+                    <div class="spinner"></div>
+                    <p>Searching for match... <span id="queueSize">0</span> players in queue</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pre-Game Lobby -->
+        <div id="preGame" class="screen">
+            <div class="container">
+                <h2>Match Found!</h2>
+
+                <div id="matchPlayers">
+                    <h3>Players</h3>
+                    <div id="matchPlayersList"></div>
+                </div>
+
+                <div class="button-group">
+                    <button id="addCPUBtn" class="btn btn-secondary">Add CPU Player</button>
+                    <button id="readyBtn" class="btn btn-primary">Ready</button>
+                </div>
+
+                <div id="waitingMessage" class="info-message">
+                    Waiting for all players to ready up...
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game" class="screen">
+            <div class="game-container">
+                <div id="gameHeader">
+                    <h2>Modern Battleship</h2>
+                    <div id="turnIndicator" class="turn-indicator">
+                        <span id="currentTurnText"></span>
+                    </div>
+                </div>
+
+                <div id="boards">
+                    <!-- Your board -->
+                    <div class="board-section">
+                        <h3>Your Fleet</h3>
+                        <div id="yourBoard" class="board"></div>
+                    </div>
+
+                    <!-- Opponent boards -->
+                    <div id="opponentBoards" class="opponents-container"></div>
+                </div>
+
+                <div id="gameLog" class="game-log"></div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOver" class="screen">
+            <div class="container">
+                <h1 id="winnerText"></h1>
+
+                <div id="gameStats">
+                    <h3>Game Statistics</h3>
+                    <table id="statsTable">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Shots Taken</th>
+                                <th>Hits</th>
+                                <th>Accuracy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statsBody"></tbody>
+                    </table>
+                </div>
+
+                <button id="backToMenuBtn" class="btn btn-primary">Back to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
