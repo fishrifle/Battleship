@@ -6,7 +6,12 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #0a0e27;
+    background:
+        linear-gradient(135deg, rgba(10, 14, 39, 0.9) 0%, rgba(15, 25, 50, 0.85) 100%),
+        url('https://images.unsplash.com/photo-1578269174936-2709b6aeb913?w=1920&h=1080&fit=crop&q=80');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
     color: #fff;
     min-height: 100vh;
     display: flex;
@@ -49,11 +54,11 @@ h1 {
     width: 100%;
     height: 100%;
     background:
-        linear-gradient(135deg, rgba(10, 14, 39, 0.9) 0%, rgba(30, 60, 114, 0.8) 100%),
-        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.05" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+        linear-gradient(135deg, rgba(10, 14, 39, 0.85) 0%, rgba(15, 25, 50, 0.75) 100%),
+        url('https://images.unsplash.com/photo-1578269174936-2709b6aeb913?w=1920&h=1080&fit=crop&q=80');
     background-size: cover;
     background-position: center;
-    animation: waveAnimation 20s ease-in-out infinite;
+    background-attachment: fixed;
     z-index: -2;
 }
 
