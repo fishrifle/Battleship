@@ -10,12 +10,18 @@
     <div id="app">
         <!-- Auth Screen -->
         <div id="auth" class="screen active">
-            <div class="container">
-                <h1>⚓ Modern Battleship</h1>
+            <div class="auth-background"></div>
+            <div class="auth-overlay"></div>
+            <div class="container auth-container">
+                <div class="auth-header">
+                    <h1 class="auth-title">⚓ MODERN BATTLESHIP</h1>
+                    <p class="auth-subtitle">Command Your Fleet. Dominate The Seas.</p>
+                </div>
 
                 <div class="auth-tabs">
                     <button id="loginTab" class="tab-btn active">Login</button>
                     <button id="registerTab" class="tab-btn">Register</button>
+                    <button id="resetTab" class="tab-btn">Reset Password</button>
                 </div>
 
                 <!-- Login Form -->
@@ -24,6 +30,9 @@
                     <input type="password" id="loginPassword" placeholder="Password">
                     <button id="loginBtn" class="btn btn-primary">Login</button>
                     <div id="loginError" class="error-message hidden"></div>
+                    <div class="form-footer">
+                        <a href="#" id="forgotPasswordLink" class="forgot-link">Forgot password?</a>
+                    </div>
                 </div>
 
                 <!-- Register Form -->
@@ -33,6 +42,25 @@
                     <input type="password" id="registerPasswordConfirm" placeholder="Confirm Password">
                     <button id="registerBtn" class="btn btn-primary">Register</button>
                     <div id="registerError" class="error-message hidden"></div>
+                </div>
+
+                <!-- Reset Password Form -->
+                <div id="resetForm" class="form-section hidden">
+                    <div id="resetStep1">
+                        <p class="reset-instruction">Enter your username to receive a reset code</p>
+                        <input type="text" id="resetUsername" placeholder="Username" maxlength="20">
+                        <button id="getResetCodeBtn" class="btn btn-primary">Get Reset Code</button>
+                    </div>
+                    <div id="resetStep2" class="hidden">
+                        <div class="success-message" id="resetCodeDisplay"></div>
+                        <p class="reset-instruction">Enter the code above and your new password</p>
+                        <input type="text" id="resetCode" placeholder="Reset Code" maxlength="6">
+                        <input type="password" id="newPassword" placeholder="New Password (min 6 chars)">
+                        <input type="password" id="newPasswordConfirm" placeholder="Confirm New Password">
+                        <button id="resetPasswordBtn" class="btn btn-primary">Reset Password</button>
+                    </div>
+                    <div id="resetError" class="error-message hidden"></div>
+                    <div id="resetSuccess" class="success-message hidden"></div>
                 </div>
             </div>
         </div>

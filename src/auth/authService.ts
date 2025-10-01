@@ -12,6 +12,8 @@ export interface User {
   wins: number;
   losses: number;
   gamesPlayed: number;
+  resetCode?: string;
+  resetCodeExpiry?: number;
 }
 
 export interface UserStats {
@@ -153,5 +155,77 @@ export class AuthService {
 
   getAllUserStats(): UserStats[] {
     return Array.from(this.users.values()).map(u => this.getUserStats(u));
+  }
+
+  generateResetCode(username: string): { success: boolean; message?: string; resetCode?: string } {
+    const normalizedUsername = username.toLowerCase();
+    const userId = this.usernameIndex.get(normalizedUsername);
+
+    if (!userId) {
+      return { success: false, message: 'Username not found' };
+    }
+
+    const user = this.users.get(userId);
+    if (!user) {
+      return { success: false, message: 'Username not found' };
+    }
+
+    // Generate 6-digit reset code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Code expires in 15 minutes
+    user.resetCode = resetCode;
+    user.resetCodeExpiry = Date.now() + 15 * 60 * 1000;
+
+    return {
+      success: true,
+      message: `Reset code generated: ${resetCode}`,
+      resetCode
+    };
+  }
+
+  async resetPassword(username: string, resetCode: string, newPassword: string): Promise<{ success: boolean; message?: string }> {
+    if (!username || !resetCode || !newPassword) {
+      return { success: false, message: 'All fields are required' };
+    }
+
+    if (newPassword.length < 6) {
+      return { success: false, message: 'Password must be at least 6 characters' };
+    }
+
+    const normalizedUsername = username.toLowerCase();
+    const userId = this.usernameIndex.get(normalizedUsername);
+
+    if (!userId) {
+      return { success: false, message: 'Invalid reset code or username' };
+    }
+
+    const user = this.users.get(userId);
+    if (!user) {
+      return { success: false, message: 'Invalid reset code or username' };
+    }
+
+    // Check if reset code exists and matches
+    if (!user.resetCode || user.resetCode !== resetCode) {
+      return { success: false, message: 'Invalid reset code' };
+    }
+
+    // Check if code is expired
+    if (!user.resetCodeExpiry || Date.now() > user.resetCodeExpiry) {
+      return { success: false, message: 'Reset code has expired' };
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    user.passwordHash = passwordHash;
+
+    // Clear reset code
+    delete user.resetCode;
+    delete user.resetCodeExpiry;
+
+    return {
+      success: true,
+      message: 'Password reset successful'
+    };
   }
 }

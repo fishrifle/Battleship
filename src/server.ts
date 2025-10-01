@@ -48,6 +48,17 @@ io.on('connection', (socket: Socket) => {
     socket.emit('authResponse', result);
   });
 
+  // Password reset
+  socket.on('requestResetCode', (data: { username: string }) => {
+    const result = authService.generateResetCode(data.username);
+    socket.emit('resetCodeGenerated', result);
+  });
+
+  socket.on('resetPassword', async (data: { username: string; resetCode: string; newPassword: string }) => {
+    const result = await authService.resetPassword(data.username, data.resetCode, data.newPassword);
+    socket.emit('passwordResetResponse', result);
+  });
+
   socket.on('login', async (data: { username: string; password: string }) => {
     const result = await authService.login(data.username, data.password);
 

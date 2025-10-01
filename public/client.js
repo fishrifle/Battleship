@@ -19,8 +19,10 @@ const screens = {
 // Auth elements
 const loginTab = document.getElementById('loginTab');
 const registerTab = document.getElementById('registerTab');
+const resetTab = document.getElementById('resetTab');
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
+const resetForm = document.getElementById('resetForm');
 const loginUsername = document.getElementById('loginUsername');
 const loginPassword = document.getElementById('loginPassword');
 const loginBtn = document.getElementById('loginBtn');
@@ -30,6 +32,18 @@ const registerPassword = document.getElementById('registerPassword');
 const registerPasswordConfirm = document.getElementById('registerPasswordConfirm');
 const registerBtn = document.getElementById('registerBtn');
 const registerError = document.getElementById('registerError');
+const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+const resetUsername = document.getElementById('resetUsername');
+const getResetCodeBtn = document.getElementById('getResetCodeBtn');
+const resetStep1 = document.getElementById('resetStep1');
+const resetStep2 = document.getElementById('resetStep2');
+const resetCodeDisplay = document.getElementById('resetCodeDisplay');
+const resetCode = document.getElementById('resetCode');
+const newPassword = document.getElementById('newPassword');
+const newPasswordConfirm = document.getElementById('newPasswordConfirm');
+const resetPasswordBtn = document.getElementById('resetPasswordBtn');
+const resetError = document.getElementById('resetError');
+const resetSuccess = document.getElementById('resetSuccess');
 
 // Matchmaking elements
 const usernameDisplay = document.getElementById('usernameDisplay');
@@ -91,8 +105,24 @@ loginTab.addEventListener('click', () => {
 registerTab.addEventListener('click', () => {
     registerTab.classList.add('active');
     loginTab.classList.remove('active');
+    resetTab.classList.remove('active');
     registerForm.classList.remove('hidden');
     loginForm.classList.add('hidden');
+    resetForm.classList.add('hidden');
+});
+
+resetTab.addEventListener('click', () => {
+    resetTab.classList.add('active');
+    loginTab.classList.remove('active');
+    registerTab.classList.remove('active');
+    resetForm.classList.remove('hidden');
+    loginForm.classList.add('hidden');
+    registerForm.classList.add('hidden');
+});
+
+forgotPasswordLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    resetTab.click();
 });
 
 // Auth Events
@@ -124,6 +154,36 @@ registerBtn.addEventListener('click', () => {
     }
 
     socket.emit('register', { username, password });
+});
+
+getResetCodeBtn.addEventListener('click', () => {
+    const username = resetUsername.value.trim();
+
+    if (!username) {
+        showError(resetError, 'Please enter your username');
+        return;
+    }
+
+    socket.emit('requestResetCode', { username });
+});
+
+resetPasswordBtn.addEventListener('click', () => {
+    const username = resetUsername.value.trim();
+    const code = resetCode.value.trim();
+    const password = newPassword.value;
+    const passwordConfirm = newPasswordConfirm.value;
+
+    if (!username || !code || !password || !passwordConfirm) {
+        showError(resetError, 'All fields are required');
+        return;
+    }
+
+    if (password !== passwordConfirm) {
+        showError(resetError, 'Passwords do not match');
+        return;
+    }
+
+    socket.emit('resetPassword', { username, resetCode: code, newPassword: password });
 });
 
 // Matchmaking Events
@@ -316,6 +376,39 @@ socket.on('gameFinished', (data) => {
 
 socket.on('error', (data) => {
     alert(data.message);
+});
+
+socket.on('resetCodeGenerated', (data) => {
+    if (data.success) {
+        resetCodeDisplay.textContent = `Your reset code: ${data.resetCode}`;
+        resetStep1.classList.add('hidden');
+        resetStep2.classList.remove('hidden');
+        resetError.classList.add('hidden');
+    } else {
+        showError(resetError, data.message);
+    }
+});
+
+socket.on('passwordResetResponse', (data) => {
+    if (data.success) {
+        resetSuccess.textContent = data.message + ' You can now login.';
+        resetSuccess.classList.remove('hidden');
+        resetError.classList.add('hidden');
+
+        // Reset form and switch to login after 2 seconds
+        setTimeout(() => {
+            resetUsername.value = '';
+            resetCode.value = '';
+            newPassword.value = '';
+            newPasswordConfirm.value = '';
+            resetStep1.classList.remove('hidden');
+            resetStep2.classList.add('hidden');
+            resetSuccess.classList.add('hidden');
+            loginTab.click();
+        }, 2000);
+    } else {
+        showError(resetError, data.message);
+    }
 });
 
 // Helper Functions
