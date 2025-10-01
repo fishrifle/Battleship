@@ -100,6 +100,36 @@
             </div>
         </div>
 
+        <!-- Ship Placement Screen -->
+        <div id="shipPlacement" class="screen">
+            <div class="container">
+                <h2>Place Your Fleet</h2>
+
+                <div id="placementInfo" class="placement-info">
+                    <div id="currentShipInfo">
+                        <h3>Current Ship: <span id="currentShipName">-</span></h3>
+                        <p>Length: <span id="currentShipLength">-</span></p>
+                    </div>
+                    <div class="placement-controls">
+                        <button id="rotateBtn" class="btn btn-secondary">Rotate (R)</button>
+                        <button id="randomPlaceBtn" class="btn btn-secondary">Random Placement</button>
+                        <button id="clearBoardBtn" class="btn btn-danger">Clear Board</button>
+                    </div>
+                </div>
+
+                <div id="placementBoard" class="board placement-board"></div>
+
+                <div id="shipsToPlace" class="ships-list">
+                    <h4>Ships to Place:</h4>
+                    <div id="shipsListContainer"></div>
+                </div>
+
+                <div class="button-group">
+                    <button id="confirmPlacementBtn" class="btn btn-primary" disabled>Confirm Placement</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Game Screen -->
         <div id="game" class="screen">
             <div class="game-container">

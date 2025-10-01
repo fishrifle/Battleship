@@ -11,6 +11,7 @@ const screens = {
     auth: document.getElementById('auth'),
     matchmaking: document.getElementById('matchmaking'),
     preGame: document.getElementById('preGame'),
+    shipPlacement: document.getElementById('shipPlacement'),
     game: document.getElementById('game'),
     gameOver: document.getElementById('gameOver')
 };
@@ -58,6 +59,23 @@ const gameLog = document.getElementById('gameLog');
 const winnerText = document.getElementById('winnerText');
 const statsBody = document.getElementById('statsBody');
 const backToMenuBtn = document.getElementById('backToMenuBtn');
+
+// Ship placement elements
+const placementBoard = document.getElementById('placementBoard');
+const currentShipName = document.getElementById('currentShipName');
+const currentShipLength = document.getElementById('currentShipLength');
+const rotateBtn = document.getElementById('rotateBtn');
+const randomPlaceBtn = document.getElementById('randomPlaceBtn');
+const clearBoardBtn = document.getElementById('clearBoardBtn');
+const confirmPlacementBtn = document.getElementById('confirmPlacementBtn');
+const shipsListContainer = document.getElementById('shipsListContainer');
+
+// Ship placement state
+let placementShips = [];
+let currentShipIndex = 0;
+let isHorizontal = true;
+let placedShips = [];
+let playerBoard = null;
 
 // Initialize
 checkStoredToken();
@@ -127,11 +145,8 @@ addCPUBtn.addEventListener('click', () => {
 });
 
 readyBtn.addEventListener('click', () => {
-    isReady = !isReady;
-    socket.emit('setReady', { ready: isReady });
-    readyBtn.textContent = isReady ? 'Unready' : 'Ready';
-    readyBtn.classList.toggle('btn-danger', isReady);
-    readyBtn.classList.toggle('btn-primary', !isReady);
+    // Request fleet from server
+    socket.emit('requestPlacement');
 });
 
 backToMenuBtn.addEventListener('click', () => {
@@ -139,6 +154,35 @@ backToMenuBtn.addEventListener('click', () => {
     gameState = null;
     isReady = false;
     showScreen('matchmaking');
+});
+
+// Ship placement events
+rotateBtn.addEventListener('click', () => {
+    isHorizontal = !isHorizontal;
+    updatePlacementPreview();
+});
+
+randomPlaceBtn.addEventListener('click', () => {
+    randomPlaceAllShips();
+});
+
+clearBoardBtn.addEventListener('click', () => {
+    clearPlacementBoard();
+});
+
+confirmPlacementBtn.addEventListener('click', () => {
+    if (placedShips.length === placementShips.length) {
+        socket.emit('setShips', { ships: placedShips });
+        isReady = true;
+    }
+});
+
+// Keyboard support for rotation
+document.addEventListener('keydown', (e) => {
+    if (screens.shipPlacement.classList.contains('active') && e.key.toLowerCase() === 'r') {
+        isHorizontal = !isHorizontal;
+        updatePlacementPreview();
+    }
 });
 
 // Socket Events
@@ -193,6 +237,17 @@ socket.on('gameUpdate', (data) => {
         `;
         matchPlayersList.appendChild(div);
     });
+});
+
+socket.on('requestFleet', (data) => {
+    placementShips = data.fleet;
+    showScreen('shipPlacement');
+    initShipPlacement();
+});
+
+socket.on('shipsAccepted', () => {
+    // Wait for game to start
+    addLog('Ships placed! Waiting for other players...');
 });
 
 socket.on('gameStarted', () => {
@@ -381,3 +436,223 @@ loginPassword.addEventListener('keypress', (e) => {
 registerPasswordConfirm.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') registerBtn.click();
 });
+
+// Ship Placement Functions
+function initShipPlacement() {
+    currentShipIndex = 0;
+    isHorizontal = true;
+    placedShips = [];
+    playerBoard = createEmptyBoardArray();
+
+    renderPlacementBoard();
+    updateShipsList();
+    updateCurrentShipDisplay();
+    confirmPlacementBtn.disabled = true;
+}
+
+function createEmptyBoardArray() {
+    const board = [];
+    for (let y = 0; y < 10; y++) {
+        board[y] = [];
+        for (let x = 0; x < 10; x++) {
+            board[y][x] = 'empty';
+        }
+    }
+    return board;
+}
+
+function renderPlacementBoard() {
+    placementBoard.innerHTML = '';
+
+    for (let y = 0; y < 10; y++) {
+        for (let x = 0; x < 10; x++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.x = x;
+            cell.dataset.y = y;
+
+            if (playerBoard[y][x] === 'ship') {
+                cell.classList.add('ship');
+            }
+
+            cell.addEventListener('mouseenter', (e) => {
+                highlightPlacementCells(x, y, true);
+            });
+
+            cell.addEventListener('mouseleave', () => {
+                clearHighlights();
+            });
+
+            cell.addEventListener('click', () => {
+                attemptPlaceShip(x, y);
+            });
+
+            placementBoard.appendChild(cell);
+        }
+    }
+}
+
+function highlightPlacementCells(x, y, isPreview) {
+    clearHighlights();
+
+    if (currentShipIndex >= placementShips.length) return;
+
+    const ship = placementShips[currentShipIndex];
+    const coords = getShipCoords(x, y, ship.length, isHorizontal);
+    const canPlace = checkCanPlace(coords);
+
+    coords.forEach(coord => {
+        if (coord.x >= 0 && coord.x < 10 && coord.y >= 0 && coord.y < 10) {
+            const cell = placementBoard.children[coord.y * 10 + coord.x];
+            if (cell) {
+                cell.classList.add(canPlace ? 'preview-valid' : 'preview-invalid');
+            }
+        }
+    });
+}
+
+function clearHighlights() {
+    Array.from(placementBoard.children).forEach(cell => {
+        cell.classList.remove('preview-valid', 'preview-invalid');
+    });
+}
+
+function getShipCoords(startX, startY, length, horizontal) {
+    const coords = [];
+    for (let i = 0; i < length; i++) {
+        coords.push({
+            x: horizontal ? startX + i : startX,
+            y: horizontal ? startY : startY + i
+        });
+    }
+    return coords;
+}
+
+function checkCanPlace(coords) {
+    for (const coord of coords) {
+        if (coord.x < 0 || coord.x >= 10 || coord.y < 0 || coord.y >= 10) {
+            return false;
+        }
+        if (playerBoard[coord.y][coord.x] === 'ship') {
+            return false;
+        }
+    }
+    return true;
+}
+
+function attemptPlaceShip(x, y) {
+    if (currentShipIndex >= placementShips.length) return;
+
+    const ship = placementShips[currentShipIndex];
+    const coords = getShipCoords(x, y, ship.length, isHorizontal);
+
+    if (!checkCanPlace(coords)) return;
+
+    // Place the ship
+    coords.forEach(coord => {
+        playerBoard[coord.y][coord.x] = 'ship';
+    });
+
+    placedShips.push({
+        name: ship.name,
+        length: ship.length,
+        coords: coords,
+        isHorizontal: isHorizontal
+    });
+
+    currentShipIndex++;
+    updateCurrentShipDisplay();
+    updateShipsList();
+    renderPlacementBoard();
+
+    if (currentShipIndex >= placementShips.length) {
+        confirmPlacementBtn.disabled = false;
+    }
+}
+
+function updateCurrentShipDisplay() {
+    if (currentShipIndex < placementShips.length) {
+        const ship = placementShips[currentShipIndex];
+        currentShipName.textContent = ship.name;
+        currentShipLength.textContent = ship.length;
+    } else {
+        currentShipName.textContent = 'All ships placed!';
+        currentShipLength.textContent = '-';
+    }
+}
+
+function updateShipsList() {
+    shipsListContainer.innerHTML = '';
+
+    placementShips.forEach((ship, index) => {
+        const div = document.createElement('div');
+        div.className = 'ship-item';
+
+        if (index < currentShipIndex) {
+            div.classList.add('placed');
+            div.innerHTML = `✓ ${ship.name} (${ship.length})`;
+        } else if (index === currentShipIndex) {
+            div.classList.add('current');
+            div.innerHTML = `→ ${ship.name} (${ship.length})`;
+        } else {
+            div.innerHTML = `${ship.name} (${ship.length})`;
+        }
+
+        shipsListContainer.appendChild(div);
+    });
+}
+
+function updatePlacementPreview() {
+    renderPlacementBoard();
+}
+
+function clearPlacementBoard() {
+    currentShipIndex = 0;
+    placedShips = [];
+    playerBoard = createEmptyBoardArray();
+    renderPlacementBoard();
+    updateCurrentShipDisplay();
+    updateShipsList();
+    confirmPlacementBtn.disabled = true;
+}
+
+function randomPlaceAllShips() {
+    clearPlacementBoard();
+
+    for (let i = 0; i < placementShips.length; i++) {
+        const ship = placementShips[i];
+        let placed = false;
+        let attempts = 0;
+
+        while (!placed && attempts < 100) {
+            const horizontal = Math.random() < 0.5;
+            const x = Math.floor(Math.random() * 10);
+            const y = Math.floor(Math.random() * 10);
+
+            const coords = getShipCoords(x, y, ship.length, horizontal);
+
+            if (checkCanPlace(coords)) {
+                coords.forEach(coord => {
+                    playerBoard[coord.y][coord.x] = 'ship';
+                });
+
+                placedShips.push({
+                    name: ship.name,
+                    length: ship.length,
+                    coords: coords,
+                    isHorizontal: horizontal
+                });
+
+                placed = true;
+            }
+
+            attempts++;
+        }
+    }
+
+    currentShipIndex = placementShips.length;
+    updateCurrentShipDisplay();
+    updateShipsList();
+    renderPlacementBoard();
+    confirmPlacementBtn.disabled = false;
+}

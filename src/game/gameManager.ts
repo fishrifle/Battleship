@@ -81,6 +81,36 @@ export class GameManager {
     return true;
   }
 
+  setPlayerShips(roomId: string, playerId: string, ships: any[]): boolean {
+    const game = this.games.get(roomId);
+    if (!game || game.status !== 'waiting') return false;
+
+    const player = game.players.find(p => p.id === playerId);
+    if (!player) return false;
+
+    // Clear existing board
+    player.board = createEmptyBoard();
+
+    // Place each ship
+    for (const shipData of ships) {
+      for (const coord of shipData.coords) {
+        if (coord.x >= 0 && coord.x < 10 && coord.y >= 0 && coord.y < 10) {
+          player.board.cells[coord.y][coord.x] = 'ship';
+        }
+      }
+
+      player.board.ships.push({
+        id: `ship_${Date.now()}_${Math.random()}`,
+        name: shipData.name,
+        length: shipData.length,
+        coords: shipData.coords,
+        hits: 0
+      });
+    }
+
+    return true;
+  }
+
   canStartGame(roomId: string): boolean {
     const game = this.games.get(roomId);
     if (!game || game.status !== 'waiting') return false;
@@ -93,9 +123,11 @@ export class GameManager {
     const game = this.games.get(roomId);
     if (!game || !this.canStartGame(roomId)) return false;
 
-    // Auto-place ships for all players
+    // Auto-place ships only for bot players (human players already placed theirs)
     for (const player of game.players) {
-      autoPlaceFleet(player.board, player.country);
+      if (player.isBot && player.board.ships.length === 0) {
+        autoPlaceFleet(player.board, player.country);
+      }
     }
 
     game.status = 'active';

@@ -153,34 +153,62 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
-  // Player ready
-  socket.on('setReady', (data: { ready: boolean }) => {
+  // Request placement screen
+  socket.on('requestPlacement', () => {
     const gameId = socketToGame.get(socket.id);
     if (!gameId) return;
-
-    gameManager.setPlayerReady(gameId, socket.id, data.ready);
 
     const game = gameManager.getGame(gameId);
     if (!game) return;
 
-    // Notify all players
-    notifyGamePlayers(gameId, 'gameUpdate', {
-      players: game.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        country: p.country,
-        isBot: p.isBot,
-        ready: p.ready
-      }))
-    });
+    const player = game.players.find(p => p.id === socket.id);
+    if (!player) return;
 
-    // Auto-start if all ready
-    if (gameManager.canStartGame(gameId)) {
-      setTimeout(() => {
-        if (gameManager.startGame(gameId)) {
-          startGame(gameId);
-        }
-      }, 1000);
+    // Send fleet configuration to player for placement
+    const { getFleetForCountry } = require('./config/ships');
+    const fleet = getFleetForCountry(player.country);
+    socket.emit('requestFleet', { fleet });
+  });
+
+  // Receive ships from player
+  socket.on('setShips', (data: { ships: any[] }) => {
+    const gameId = socketToGame.get(socket.id);
+    if (!gameId) return;
+
+    const game = gameManager.getGame(gameId);
+    if (!game) return;
+
+    const player = game.players.find(p => p.id === socket.id);
+    if (!player) return;
+
+    // Validate and place ships
+    try {
+      gameManager.setPlayerShips(gameId, socket.id, data.ships);
+      gameManager.setPlayerReady(gameId, socket.id, true);
+
+      socket.emit('shipsAccepted');
+
+      // Notify all players
+      notifyGamePlayers(gameId, 'gameUpdate', {
+        players: game.players.map(p => ({
+          id: p.id,
+          name: p.name,
+          country: p.country,
+          isBot: p.isBot,
+          ready: p.ready
+        }))
+      });
+
+      // Auto-start if all ready
+      if (gameManager.canStartGame(gameId)) {
+        setTimeout(() => {
+          if (gameManager.startGame(gameId)) {
+            startGame(gameId);
+          }
+        }, 1000);
+      }
+    } catch (error) {
+      socket.emit('error', { message: 'Invalid ship placement' });
     }
   });
 
